@@ -170,8 +170,7 @@ function getMeasurements() {
     .map(entry => ({
       name: entry.name,
       duration: entry.duration,
-      startTime: entry.startTime,
-      type: entry.detail.type
+      startTime: entry.startTime
     }));
 
 }
