@@ -166,7 +166,7 @@ function downloadCsvFile(data) {
 
 function getMeasurements() {
   return performance.getEntries()
-    .filter(entry => entry.entryType === 'measure')
+    //.filter(entry => entry.entryType === 'measure')
     .map(entry => ({
       name: entry.name,
       duration: entry.duration,
@@ -220,12 +220,11 @@ function plotMeasurements() {
           measurementIdIndex,
           entry.startTime,
           entry.startTime + entry.duration,
-          entry.duration,
-          entry.type
+          entry.duration
         ],
         itemStyle: {
           normal: {
-            color: measureTypeToColor.get(entry.type)
+            color: measureTypeToColor.get(entry.name)
           }
         }
       }
