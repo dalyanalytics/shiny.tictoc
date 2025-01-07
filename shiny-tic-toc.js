@@ -20,7 +20,7 @@ function startMeasurement(id) {
   performance.mark(startMarkLabel);
 }
 
-function endMeasurement(id, type) {
+function endMeasurement(id) {
   const startMarkLabel = makeStartMarkLabel(id);
   const endMarkLabel = makeEndMarkLabel(id);
   const measurementLabel = makeMeasurementLabel(id);
@@ -30,9 +30,6 @@ function endMeasurement(id, type) {
   performance.measure(
     measurementLabel,
     {
-      detail: {
-        type: type
-      },
       start: startMarkLabel,
       end: endMarkLabel
     }
@@ -51,7 +48,7 @@ function outputValueHandler(event) {
   // setTimeout to end measuring after the output JS code is run
   // See https://github.com/rstudio/shiny/issues/2127
   setTimeout(() => {
-    endMeasurement(outputId, "output");
+    endMeasurement(outputId);
   }, 0);
 }
 
@@ -60,7 +57,7 @@ function serverBusyHandler(event) {
 }
 
 function serverIdleHandler(event) {
-  endMeasurement("server_computation", "server_computation");
+  endMeasurement("server_computation");
 }
 
 function customMessageEventHandler(event) {
@@ -72,11 +69,9 @@ function customMessageEventHandler(event) {
   startMeasurement(handlerName);
 
   setTimeout(() => {
-    endMeasurement(handlerName, "custom_message_handler");
+    endMeasurement(handlerName);
   }, 0)
 }
-
-
 
 $(document).ready(function () {
   // Handler for output start marks
@@ -166,13 +161,12 @@ function downloadCsvFile(data) {
 
 function getMeasurements() {
   return performance.getEntries()
-    //.filter(entry => entry.entryType === 'measure')
+    .filter(entry => entry.entryType === 'measure')
     .map(entry => ({
       name: entry.name,
       duration: entry.duration,
       startTime: entry.startTime
     }));
-
 }
 
 function prepareCsvData() {
@@ -201,11 +195,6 @@ function plotMeasurements() {
   const chartDom = document.getElementById('measurementsTimeline');
   const myChart = echarts.init(chartDom);
 
-  const measureTypeToColor = new Map()
-  measureTypeToColor.set('server_computation', '#7b9ce1');
-  measureTypeToColor.set('output', '#bd6d6c');
-  measureTypeToColor.set('custom_message_handler', '#75d874');
-
   const measurementData = JSON.parse(document.getElementById('measurementData').text);
   const measurementIds = measurementData.map(entry => entry.name);
   const uniqueMeasurementIds = [...new Set(measurementIds)];
@@ -221,13 +210,8 @@ function plotMeasurements() {
           entry.startTime,
           entry.startTime + entry.duration,
           entry.duration
-        ],
-        itemStyle: {
-          normal: {
-            color: measureTypeToColor.get(entry.name)
-          }
-        }
-      }
+        ]
+      };
     }
   );
 
@@ -263,7 +247,7 @@ function plotMeasurements() {
   const option = {
     tooltip: {
       formatter: function (params) {
-        return params.marker + params.name + ': ' + params.value[3] + ' ms ' + `<br>type: ${params.value[4]}`;
+        return params.marker + params.name + ': ' + params.value[3] + ' ms';
       }
     },
     title: {
@@ -326,7 +310,7 @@ async function createHtmlReport() {
   // Data Script
   const dataScript = document.createElement("script");
   dataScript.id = "measurementData";
-  dataScript.type = type = "application/json";
+  dataScript.type = "application/json";
   dataScript.innerText = `${JSON.stringify(measurementData)}`;
 
   // Plot div
