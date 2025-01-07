@@ -177,12 +177,11 @@ function getMeasurements() {
 }
 
 function prepareCsvData() {
-  const dataHeader = ["measurement_id",  "type", "start_time", "duration (ms)"];
+  const dataHeader = ["measurement_id", "start_time", "duration (ms)"];
 
   const measurementData = getMeasurements()
     .map(measurement => [
       measurement.name,
-      measurement.type,
       measurement.startTime,
       measurement.duration
     ]);
