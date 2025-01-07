@@ -1,4 +1,4 @@
-# shiny.tictoc
+# shiny.tictoc - modified
 
 `{shiny.tictoc}` allows you to measure:
 
@@ -13,7 +13,7 @@ To start using `shiny.tictoc` in your app, just add the following line somewhere
 
 ```r
 tags$script(
-    src = "https://cdn.jsdelivr.net/gh/Appsilon/shiny.tictoc@v0.2.0/shiny-tic-toc.min.js"
+    src = "https://cdn.jsdelivr.net/gh/dalyanalytics/shiny.tictoc/shiny-tic-toc.min.js"
 )
 ```
 
