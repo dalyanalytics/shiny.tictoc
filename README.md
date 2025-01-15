@@ -24,13 +24,20 @@ To access the benchmarks [open the browser devtools](https://developer.mozilla.o
 ```js
 // Print out all measurements
 showAllMeasurements()
+```
 
+```js
 // To download all measurements as a CSV file
 exportMeasurements()
+```
 
+```js
 // To print out summarised measurements (slowest rendering output, slowest server computation)
 showSummarisedMeasurements()
 
+```
+
+```js
 // To export an html file that visualizes measurements on a timeline
 await exportHtmlReport()
 ```
