@@ -161,7 +161,12 @@ function downloadCsvFile(data) {
 
 function getMeasurements() {
   return performance.getEntries()
-    .filter(entry => entry && entry.entryType === 'measure')
+    .filter(entry => entry &&
+            typeof entry === 'object' &&
+            entry.entryType === 'measure' &&
+            entry.name &&
+            typeof entry.duration === 'number' &&
+            typeof entry.startTime === 'number')
     .map(entry => ({
       name: entry.name,
       duration: entry.duration,
