@@ -17,7 +17,11 @@ function makeMeasurementLabel(id) {
 function startMeasurement(id) {
   const startMarkLabel = makeStartMarkLabel(id);
 
-  performance.mark(startMarkLabel);
+  try {
+    performance.mark(startMarkLabel);
+  } catch (error) {
+    console.warn('Failed to create performance mark:', error);
+  }
 }
 
 function endMeasurement(id) {
@@ -25,15 +29,19 @@ function endMeasurement(id) {
   const endMarkLabel = makeEndMarkLabel(id);
   const measurementLabel = makeMeasurementLabel(id);
 
-  performance.mark(endMarkLabel);
+  try {
+    performance.mark(endMarkLabel);
 
-  performance.measure(
-    measurementLabel,
-    {
-      start: startMarkLabel,
-      end: endMarkLabel
-    }
-  );
+    performance.measure(
+      measurementLabel,
+      {
+        start: startMarkLabel,
+        end: endMarkLabel
+      }
+    );
+  } catch (error) {
+    console.warn('Failed to create performance measurement:', error);
+  }
 }
 
 function outputRecalculatingHandler(event) {
@@ -91,35 +99,62 @@ $(document).ready(function () {
 });
 
 function showAllMeasurements() {
-  const entries = performance.getEntriesByType("measure");
+  try {
+    const entries = performance.getEntriesByType("measure") || [];
 
-  entries.forEach((entry) => {
-    console.log(`${entry.name}'s duration: ${entry.duration}`);
-  });
+    entries
+      .filter(entry => entry != null && 
+              typeof entry === 'object' && 
+              entry.name && 
+              typeof entry.duration === 'number')
+      .forEach((entry) => {
+        console.log(`${entry.name}'s duration: ${entry.duration}`);
+      });
+  } catch (error) {
+    console.warn('Failed to retrieve performance measurements:', error);
+  }
 }
 
 function showSummarisedMeasurements() {
-  const serverComputationLabel = makeMeasurementLabel("server_computation");
-  const measurements = performance.getEntriesByType("measure");
+  try {
+    const serverComputationLabel = makeMeasurementLabel("server_computation");
+    const measurements = (performance.getEntriesByType("measure") || [])
+      .filter(entry => entry != null && 
+              typeof entry === 'object' && 
+              entry.name && 
+              typeof entry.duration === 'number');
 
-  const slowestServerComputation = Math.max(
-    ...measurements
+    if (measurements.length === 0) {
+      console.log('No performance measurements available');
+      return;
+    }
+
+    const serverComputations = measurements
       .filter(entry => entry.name === serverComputationLabel)
-      .map(entry => entry.duration)
-  );
+      .map(entry => entry.duration);
 
-  const slowestOutputComputation = Math.max(
-    ...measurements
+    const outputComputations = measurements
       .filter(entry => entry.name !== serverComputationLabel)
-      .map(entry => entry.duration)
-  );
+      .map(entry => entry.duration);
 
-  const slowestOutputLabel = measurements
-    .filter(entry => entry.duration === slowestOutputComputation)
-    .map(entry => entry.name)[0];
+    const slowestServerComputation = serverComputations.length > 0 
+      ? Math.max(...serverComputations) 
+      : 0;
 
-  console.log(`Slowest Server Computation: ${slowestServerComputation}`);
-  console.log(`Slowest output computation: ${slowestOutputComputation} (${slowestOutputLabel})`);
+    const slowestOutputComputation = outputComputations.length > 0 
+      ? Math.max(...outputComputations) 
+      : 0;
+
+    const slowestOutputEntry = measurements
+      .find(entry => entry.duration === slowestOutputComputation);
+    
+    const slowestOutputLabel = slowestOutputEntry?.name || 'Unknown';
+
+    console.log(`Slowest Server Computation: ${slowestServerComputation}`);
+    console.log(`Slowest output computation: ${slowestOutputComputation} (${slowestOutputLabel})`);
+  } catch (error) {
+    console.warn('Failed to analyze performance measurements:', error);
+  }
 }
 
 function getCurrentDateTime() {
@@ -160,18 +195,29 @@ function downloadCsvFile(data) {
 }
 
 function getMeasurements() {
-  return performance.getEntries()
-    .filter(entry => entry != null &&
-            typeof entry === 'object' &&
-            entry.entryType === 'measure' &&
-            entry.name &&
-            typeof entry.duration === 'number' &&
-            typeof entry.startTime === 'number')
-    .map(entry => ({
-      name: entry?.name || '',
-      duration: entry?.duration || 0,
-      startTime: entry?.startTime || 0
-    }));
+  try {
+    const entries = performance.getEntries();
+    if (!Array.isArray(entries)) {
+      console.warn('Performance API returned non-array result');
+      return [];
+    }
+    
+    return entries
+      .filter(entry => entry != null &&
+              typeof entry === 'object' &&
+              entry.entryType === 'measure' &&
+              entry.name &&
+              typeof entry.duration === 'number' &&
+              typeof entry.startTime === 'number')
+      .map(entry => ({
+        name: entry?.name || '',
+        duration: entry?.duration || 0,
+        startTime: entry?.startTime || 0
+      }));
+  } catch (error) {
+    console.warn('Failed to retrieve performance measurements:', error);
+    return [];
+  }
 }
 
 function prepareCsvData() {
@@ -323,16 +369,27 @@ async function createHtmlReport() {
   plotDiv.id = "measurementsTimeline";
   plotDiv.style.height = "100vh";
 
-  // Echarts script
+  // Echarts script with error handling
   const echartsCDN = "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js";
-  const echartsLibSourceCode = await fetch(echartsCDN).then(response => response.text());
-  const echartsLibraryScriptTag = document.createElement("script");
-  echartsLibraryScriptTag.text = echartsLibSourceCode;
+  try {
+    const echartsLibSourceCode = await fetch(echartsCDN).then(response => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ECharts library: ${response.status}`);
+      }
+      return response.text();
+    });
+    const echartsLibraryScriptTag = document.createElement("script");
+    echartsLibraryScriptTag.text = echartsLibSourceCode;
+    report.head.appendChild(echartsLibraryScriptTag);
+  } catch (error) {
+    console.warn('Failed to load ECharts library from CDN:', error);
+    // Add fallback message to the plot div
+    plotDiv.innerHTML = '<p>Unable to load charting library. Chart visualization is not available.</p>';
+  }
 
   const plottingScript = document.createElement("script");
   plottingScript.text = `${plotMeasurements.toString()}; window.onload = plotMeasurements`;
 
-  report.head.appendChild(echartsLibraryScriptTag);
   report.head.appendChild(dataScript);
   report.head.appendChild(plottingScript);
 
