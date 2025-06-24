@@ -168,9 +168,9 @@ function getMeasurements() {
             typeof entry.duration === 'number' &&
             typeof entry.startTime === 'number')
     .map(entry => ({
-      name: entry.name,
-      duration: entry.duration,
-      startTime: entry.startTime
+      name: entry?.name || '',
+      duration: entry?.duration || 0,
+      startTime: entry?.startTime || 0
     }));
 }
 
