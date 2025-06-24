@@ -161,7 +161,7 @@ function downloadCsvFile(data) {
 
 function getMeasurements() {
   return performance.getEntries()
-    .filter(entry => entry &&
+    .filter(entry => entry != null &&
             typeof entry === 'object' &&
             entry.entryType === 'measure' &&
             entry.name &&
